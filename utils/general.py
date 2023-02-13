@@ -8,6 +8,8 @@ import glob
 import inspect
 import logging
 import logging.config
+import tempfile
+
 import math
 import os
 import platform
@@ -153,7 +155,9 @@ def user_config_dir(dir='Ultralytics', env_var='YOLOV5_CONFIG_DIR'):
     else:
         cfg = {'Windows': 'AppData/Roaming', 'Linux': '.config', 'Darwin': 'Library/Application Support'}  # 3 OS dirs
         path = Path.home() / cfg.get(platform.system(), '')  # OS-specific config dir
-        path = (path if is_writeable(path) else Path('/tmp')) / dir  # GCP and AWS lambda fix, only /tmp is writeable
+        if not is_writeable(path):  # GCP and AWS lambda fix, only /tmp is writeable
+            path = Path(tempfile.gettempdir())
+        path = path / dir
     path.mkdir(exist_ok=True)  # make if required
     return path
 
