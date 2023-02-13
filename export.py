@@ -52,6 +52,7 @@ import platform
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import warnings
 from pathlib import Path
@@ -464,13 +465,13 @@ def add_tflite_metadata(file, metadata, num_outputs):
         from tflite_support import metadata as _metadata
         from tflite_support import metadata_schema_py_generated as _metadata_fb
 
-        tmp_file = Path('/tmp/meta.txt')
-        with open(tmp_file, 'w') as meta_f:
+        with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as meta_f:
             meta_f.write(str(metadata))
+            meta_filename = meta_f.name
 
         model_meta = _metadata_fb.ModelMetadataT()
         label_file = _metadata_fb.AssociatedFileT()
-        label_file.name = tmp_file.name
+        label_file.name = meta_filename
         model_meta.associatedFiles = [label_file]
 
         subgraph = _metadata_fb.SubGraphMetadataT()
@@ -484,9 +485,9 @@ def add_tflite_metadata(file, metadata, num_outputs):
 
         populator = _metadata.MetadataPopulator.with_model_file(file)
         populator.load_metadata_buffer(metadata_buf)
-        populator.load_associated_files([str(tmp_file)])
+        populator.load_associated_files([meta_filename])
         populator.populate()
-        tmp_file.unlink()
+        os.unlink(meta_filename)
 
 
 @smart_inference_mode()
